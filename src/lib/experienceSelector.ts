@@ -209,7 +209,7 @@ export function evaluateDynamicExperiences(
     iconName: "TrendingUp",
   };
 
-  // 8. Evaluate DECIDE ("What should my business do next?")
+  // 8. Evaluate DECIDE ("What would you like to improve?")
   const asksDecide =
     qLower.includes("what should") ||
     qLower.includes("recommend") ||
@@ -217,22 +217,23 @@ export function evaluateDynamicExperiences(
     qLower.includes("action") ||
     qLower.includes("strategy") ||
     qLower.includes("decision") ||
+    qLower.includes("improve") ||
     qLower.includes("how can we improve");
 
   const isDecideEligible =
     asksDecide ||
-    result.isValidCalculation !== false; // Any verified statistical result generates structured recommendations
+    result.isValidCalculation !== false; // Any verified statistical result generates decision support
   const isDecidePrimary = asksDecide && isDecideEligible;
 
   const decideEval: ExperienceEligibility = {
     type: "decide",
     title: "Decide",
-    tagline: "What should my business do next?",
+    tagline: "What would you like to improve?",
     isEligible: isDecideEligible,
     isPrimary: isDecidePrimary,
     reason: isDecideEligible
-      ? "Verified statistical findings provide an empirical basis for structured business recommendations and test design."
-      : "No verified findings available to ground business recommendations.",
+      ? "Interactive mathematical decision engine: define controllable variables, calibrate human assumptions, and calculate the best feasible solution."
+      : "No verified findings available to ground business decision models.",
     iconName: "Lightbulb",
   };
 

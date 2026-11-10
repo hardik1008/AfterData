@@ -11,6 +11,12 @@ import { evaluateQuestionRelevance, extractBusinessContext } from "./src/lib/que
 import { runAdversarialBenchmark } from "./src/lib/adversarialBenchmark";
 import { generateBusinessRecommendations } from "./src/lib/recommendationEngine";
 import { runConstrainedBusinessOptimisation, evaluateOutcomeForAllocation } from "./src/lib/optimisationEngine";
+import {
+  solveMathematicalDecisionProblem,
+  generateAlternativeScenarios,
+  generateSensitivityAnalysis,
+} from "./src/lib/mathematicalDecisionEngine";
+import { DECISION_CAPABILITIES, matchCapabilityFromGoal } from "./src/lib/decisionCapabilities";
 
 dotenv.config();
 
@@ -1012,6 +1018,45 @@ app.post("/api/optimise/allocate", (req, res) => {
     res.json({ success: true, optimisation });
   } catch (err: any) {
     res.status(500).json({ error: "Failed to run constrained optimisation", details: err.message });
+  }
+});
+
+// Human-Calibrated Mathematical Decision Engine Endpoints
+app.get("/api/decision-support/capabilities", (req, res) => {
+  res.json({
+    success: true,
+    totalCapabilities: DECISION_CAPABILITIES.length,
+    capabilities: DECISION_CAPABILITIES,
+  });
+});
+
+app.post("/api/decision-support/match-goal", (req, res) => {
+  const { goal, dataset } = req.body;
+  if (!goal) {
+    return res.status(400).json({ error: "goal string is required" });
+  }
+  const matched = matchCapabilityFromGoal(goal, dataset);
+  res.json({ success: true, matchedCapability: matched });
+});
+
+app.post("/api/decision-support/solve", (req, res) => {
+  try {
+    const { formulation, baselineOutcome } = req.body;
+    if (!formulation || !Array.isArray(formulation.controllableVariables)) {
+      return res.status(400).json({ error: "Valid formulation with controllableVariables is required" });
+    }
+    const solution = solveMathematicalDecisionProblem(formulation, baselineOutcome);
+    const alternativeScenarios = generateAlternativeScenarios(formulation, solution);
+    const sensitivity = generateSensitivityAnalysis(formulation, solution);
+
+    res.json({
+      success: true,
+      solution,
+      alternativeScenarios,
+      sensitivity,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to solve mathematical decision problem", details: err.message });
   }
 });
 

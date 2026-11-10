@@ -169,7 +169,7 @@ export const InvestigationScreen: React.FC<InvestigationScreenProps> = ({
     const pValFormatted = formatPValue(result.pValue);
     const safeFilename = dataset.filename.replace(/\.[^/.]+$/, "");
     const provHash = provenanceRecord?.provenance_audit_hash || "deterministic_ledger_verified";
-    const recordId = provenanceRecord?.record_id || `rec_${Date.now()}`;
+    const recordId = provenanceRecord?.id || `rec_${Date.now()}`;
 
     const markdown = `# Statistical Investigation Report — AFTERDATA
 **Generated At:** ${new Date().toISOString()}  
@@ -204,7 +204,7 @@ ${result.explanationLayer?.simpleExplanation || result.tenYearOldExplanation || 
 - **95% Confidence Interval:** ${result.confidenceInterval ? `[${result.confidenceInterval[0].toFixed(3)}, ${result.confidenceInterval[1].toFixed(3)}]` : "N/A"}
 
 ### Detailed Mathematical Evidence Steps
-${result.evidenceSteps && result.evidenceSteps.length > 0 ? result.evidenceSteps.map((step, i) => `${i + 1}. **${step.title}**: ${step.detail} ${step.formula ? `\`${step.formula}\`` : ""}`).join("\n") : "Calculated via verified deterministic module without simulation variance."}
+${result.evidenceSteps && result.evidenceSteps.length > 0 ? result.evidenceSteps.map((step, i) => `${i + 1}. **${step.title}**: ${step.computation} ${step.formula ? `\`${step.formula}\`` : ""}`).join("\n") : "Calculated via verified deterministic module without simulation variance."}
 
 ---
 

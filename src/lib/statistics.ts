@@ -1828,6 +1828,8 @@ export function computeMultipleLinearRegression(
   return {
     testUsed: "Multiple Linear Regression (OLS)",
     question,
+    nullHypothesis: `All slope coefficients are simultaneously zero: β₁ = β₂ = ... = βₖ = 0 (R² = 0).`,
+    alternativeHypothesis: `At least one predictor has a non-zero linear relationship with ${targetCol}.`,
     sampleSize: n,
     degreesOfFreedom: dfRes,
     testStatistic: Number(fStatistic.toFixed(3)),
@@ -1836,6 +1838,25 @@ export function computeMultipleLinearRegression(
     isSignificant: isModelSig,
     effectSize: Number(rSquared.toFixed(3)), // R-squared represents effect size / variance explained
     confidenceInterval: coefDetails[1]?.ci95 || [0, 0],
+    validationChecks: [
+      {
+        checkName: "Sample Size Power",
+        passed: n >= 30,
+        details: `Sample size N=${n} ${n >= 30 ? "satisfies" : "below recommended"} minimum power guidelines (N >= 30).`,
+      },
+      {
+        checkName: "Multicollinearity (VIF)",
+        passed: Math.max(...Object.values(vifMap), 1.0) < 5,
+        details: Math.max(...Object.values(vifMap), 1.0) < 5
+          ? `Max VIF is ${Math.max(...Object.values(vifMap), 1.0).toFixed(2)} (< 5, low collinearity).`
+          : `Max VIF is ${Math.max(...Object.values(vifMap), 1.0).toFixed(2)} (>= 5, potential multicollinearity).`,
+      },
+      {
+        checkName: "Residual Independence",
+        passed: durbinWatson >= 1.5 && durbinWatson <= 2.5,
+        details: `Durbin-Watson statistic is ${durbinWatson.toFixed(2)} (normal range 1.5 - 2.5).`,
+      },
+    ],
     plainEnglishSummary: `The model explains ${(rSquared * 100).toFixed(1)}% of the variance in ${targetCol} (R² = ${rSquared.toFixed(3)}, F = ${fStatistic.toFixed(2)}, ${formatPValueDisplay(modelPValue)}). ${isModelSig ? "The relationship is statistically significant." : "The relationship is not statistically distinguishable from random variation."}`,
     tenYearOldExplanation: `We checked how well knowing ${predictorCols.join(" and ")} lets us predict ${targetCol}. It explains about ${Math.round(rSquared * 100)}% of the real pattern.`,
     verdictHeadline: isModelSig
