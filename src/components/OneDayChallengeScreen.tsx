@@ -508,6 +508,11 @@ ${benchmark.academicRigorAudit.causalityBoundary}
                 ))}
               </ul>
             </div>
+            <div className="pt-2 border-t border-neutral-200/80 space-y-1 text-[11px] text-neutral-600">
+              <p><strong>Granularity &amp; Aggregation:</strong> {benchmark.academicRigorAudit.sourceGranularityNote}</p>
+              <p><strong>Period Completeness:</strong> {benchmark.academicRigorAudit.incompletePeriodAudit}</p>
+              <p><strong>Data Discrepancy Audit:</strong> {benchmark.academicRigorAudit.holidayInconsistencyAudit}</p>
+            </div>
             <div className="text-[10px] font-mono text-neutral-400 pt-1">
               Ledger Provenance Hash: {benchmark.academicRigorAudit.reproducibilityFingerprint}
             </div>

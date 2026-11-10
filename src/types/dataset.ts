@@ -556,3 +556,111 @@ export interface AdversarialBenchmarkReport {
   tests: AdversarialTestCaseResult[];
 }
 
+// --- Experience F: DECIDE Experience Types ---
+export type RecommendationCategory =
+  | "implement"
+  | "test_first"
+  | "investigate_further"
+  | "monitor"
+  | "avoid_for_now";
+
+export interface BusinessRecommendation {
+  id: string;
+  category: RecommendationCategory;
+  priorityScore: number; // 0 to 100
+  title: string;
+
+  // 9 Required Fields
+  finding: string;               // 1. What did the data reveal?
+  opportunityOrProblem: string;  // 2. Why does it matter?
+  recommendedAction: string;     // 3. What should management do?
+  expectedOutcome: string;       // 4. What might improve?
+  evidence: string;              // 5. Which statistical results support this?
+  confidence: "High" | "Moderate" | "Low"; // 6. How strong is the available evidence?
+  risk: string;                  // 7. What could go wrong?
+  measurementKPI: string;        // 8. Which KPI should be monitored?
+  nextExperiment: {              // 9. How can the recommendation be tested?
+    title: string;
+    design: string;
+    sampleSizeOrDuration: string;
+    successMetric: string;
+  };
+
+  // Prioritization Factors (1-5 scale)
+  factors: {
+    evidenceStrength: number;
+    potentialImpact: number;
+    feasibility: number;
+    cost: number;
+    operationalRisk: number;
+    timeToValue: number;
+  };
+}
+
+export interface RecommendationPriorityWeights {
+  evidenceStrength: number;
+  potentialImpact: number;
+  feasibility: number;
+  cost: number;
+  operationalRisk: number;
+  timeToValue: number;
+}
+
+// --- Experience G: OPTIMISE Experience Types ---
+export interface ControllableVariable {
+  name: string;
+  label: string;
+  currentValue: number;
+  minAllowed: number;
+  maxAllowed: number;
+  step: number;
+  unit: string;
+}
+
+export interface OptimisationConstraint {
+  id: string;
+  name: string;
+  type: "budget_total" | "min_allocation" | "max_allocation" | "custom";
+  description: string;
+  limitValue: number;
+  isBinding: boolean;
+}
+
+export interface OptimisationScenario {
+  allocation: Record<string, number>;
+  expectedOutcome: number;
+  outcomeConfidenceInterval: [number, number];
+  isFeasible: boolean;
+  bindingConstraints: string[];
+}
+
+export interface OptimisationResult {
+  objective: string;
+  targetOutcomeVariable: string;
+  controllableVariables: ControllableVariable[];
+  currentAllocation: Record<string, number>;
+  currentOutcome: number;
+  optimalAllocation: Record<string, number>;
+  optimalOutcome: number;
+  outcomeLift: number;
+  outcomeLiftPercent: number;
+  bindingConstraints: OptimisationConstraint[];
+  modelSummary: {
+    modelType: "Multiple Linear Regression (OLS)" | "Diminishing Returns Log-Linear" | "Polynomial Response";
+    formula: string;
+    rSquared: number;
+    fStatistic: number;
+    pValue: number;
+    vifDiagnostics?: Record<string, number>;
+  };
+  sensitivity: {
+    parameter: string;
+    change: string;
+    estimatedOutcomeImpact: number;
+  }[];
+  uncertaintyMargin: number;
+  extrapolationWarnings: string[];
+  observationalCaveat: string;
+}
+
+

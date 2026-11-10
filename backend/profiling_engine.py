@@ -4,6 +4,7 @@ Deterministic profiling pipeline using Pandas, NumPy, and SciPy.
 Operates completely independently of any LLM.
 """
 from typing import Dict, Any, List, Optional
+import re
 import pandas as pd
 import numpy as np
 from datetime import datetime
@@ -60,7 +61,8 @@ def profile_dataframe(df: pd.DataFrame, filename: str = "dataset.csv", sheet_nam
             inferred = "temporal"
             date_columns.append(str(col))
         elif pd.api.types.is_numeric_dtype(series):
-            if unique_count <= 5 and row_count > 30:
+            is_numeric_metric = bool(re.search(r'(score|nps|ticket|count|item|rating|spend|revenue|value|hour|minute|day|age|loss|error|rate|pct|percent)', str(col), re.IGNORECASE))
+            if unique_count <= 5 and row_count > 30 and not is_numeric_metric:
                 inferred = "categorical"
                 categorical_columns.append(str(col))
             else:

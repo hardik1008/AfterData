@@ -4,6 +4,7 @@ Rigorous, deterministic statistical calculation pipeline.
 Ensures no mathematical hallucination by the LLM.
 """
 from typing import Dict, Any, List, Tuple
+import re
 import pandas as pd
 import numpy as np
 import scipy.stats as stats
@@ -24,7 +25,8 @@ def analyze_dataset_structure(df: pd.DataFrame) -> List[Dict[str, Any]]:
         elif pd.api.types.is_datetime64_any_dtype(df[col]):
             inferred = "temporal"
         elif pd.api.types.is_numeric_dtype(df[col]):
-            if n_unique <= 5 and n_unique / max(total_non_null, 1) < 0.05:
+            is_numeric_metric = bool(re.search(r'(score|nps|ticket|count|item|rating|spend|revenue|value|hour|minute|day|age|loss|error|rate|pct|percent)', str(col), re.IGNORECASE))
+            if n_unique <= 5 and (n_unique / max(total_non_null, 1) < 0.05) and not is_numeric_metric:
                 inferred = "categorical"
             else:
                 inferred = "continuous"

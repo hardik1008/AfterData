@@ -37,28 +37,52 @@ export const ForecastExperience: React.FC<ForecastExperienceProps> = ({
   const metricName = targetVar || continuousCols[0]?.name || "Volume";
 
   // Check temporal coverage
-  const timeDist = dataset.timeCoverage?.periodVolumeDistribution || [];
-  const hasSufficientHistory = timeDist.length >= 5;
-
-  // Build historical series
+  const dateCol = dataset.timeCoverage?.dateColumn || dataset.columns.find((c) => c.inferredType === "temporal")?.name;
   let historicalPoints: { period: string; actual: number }[] = [];
-  if (timeDist.length > 0) {
-    historicalPoints = timeDist.map((p) => ({
-      period: p.period,
-      actual: p.count,
-    }));
-  } else {
-    // Synthetic fallback from record order if dates missing
-    const step = Math.max(1, Math.floor((dataset.rowCount || 50) / 10));
-    for (let i = 0; i < Math.min(10, dataset.rowCount || 10); i++) {
-      const idx = i * step;
-      const val = Number(dataset.records[idx]?.[metricName]) || (50 + i * 4);
-      historicalPoints.push({
-        period: `Period ${i + 1}`,
-        actual: val,
+
+  if (dateCol && dataset.records && dataset.records.length > 0) {
+    // Group records by period and compute metric average
+    const periodMap = new Map<string, number[]>();
+    for (const r of dataset.records) {
+      const dStr = String(r[dateCol] || "").trim();
+      const val = Number(r[metricName]);
+      if (!isNaN(val) && val !== null && dStr) {
+        // Group by day if <= 60 rows, otherwise by YYYY-MM
+        const periodKey = dataset.records.length <= 60 ? dStr : (dStr.length >= 7 ? dStr.slice(0, 7) : dStr);
+        if (!periodMap.has(periodKey)) periodMap.set(periodKey, []);
+        periodMap.get(periodKey)!.push(val);
+      }
+    }
+
+    if (periodMap.size >= 3) {
+      const sortedPeriods = Array.from(periodMap.keys()).sort();
+      historicalPoints = sortedPeriods.map((period) => {
+        const vals = periodMap.get(period)!;
+        const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+        return {
+          period,
+          actual: Math.round(avg),
+        };
       });
     }
   }
+
+  // If no date grouping was possible, sample evenly across records
+  if (historicalPoints.length < 3) {
+    const total = dataset.records?.length || 10;
+    const step = Math.max(1, Math.floor(total / 10));
+    historicalPoints = [];
+    for (let i = 0; i < Math.min(10, total); i++) {
+      const idx = i * step;
+      const val = Number(dataset.records?.[idx]?.[metricName]);
+      historicalPoints.push({
+        period: `Period ${i + 1}`,
+        actual: !isNaN(val) && val !== null ? Math.round(val) : Math.round(50 + i * 4),
+      });
+    }
+  }
+
+  const hasSufficientHistory = historicalPoints.length >= 4;
 
   const nHist = historicalPoints.length;
 

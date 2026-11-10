@@ -156,39 +156,46 @@ export const DiagnoseExperience: React.FC<DiagnoseExperienceProps> = ({
           <div className="h-64 w-full pt-2">
             <ResponsiveContainer width="100%" height="100%">
               {result.chartType === "scatter_regression" ? (
-                <ComposedChart data={result.chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="x" stroke="#888" fontSize={11} tickLine={false} />
-                  <YAxis stroke="#888" fontSize={11} tickLine={false} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#fff",
-                      borderRadius: "8px",
-                      border: "1px solid #e5e5e5",
-                      fontSize: "12px",
-                    }}
-                  />
-                  <Scatter
-                    dataKey="y"
-                    fill="#171717"
-                    opacity={0.65}
-                    name="Observed data"
-                    isAnimationActive={true}
-                    animationDuration={650}
-                    animationEasing="ease-out"
-                  />
-                  <Line
-                    dataKey="trend"
-                    stroke="#171717"
-                    strokeWidth={2.5}
-                    dot={false}
-                    name="Fitted line"
-                    isAnimationActive={true}
-                    animationDuration={1000}
-                    animationBegin={400}
-                    animationEasing="ease-in-out"
-                  />
-                </ComposedChart>
+                (() => {
+                  const samplePt = result.chartData?.[0] || {};
+                  const scatterXKey = samplePt.x !== undefined ? "x" : (result.chartVariables?.xKey || (samplePt.date !== undefined ? "date" : "name"));
+                  const scatterYKey = samplePt.y !== undefined ? "y" : (samplePt.actual !== undefined ? "actual" : (result.chartVariables?.yKey || "value"));
+                  return (
+                    <ComposedChart data={result.chartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <XAxis dataKey={scatterXKey} stroke="#888" fontSize={11} tickLine={false} />
+                      <YAxis stroke="#888" fontSize={11} tickLine={false} />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "#fff",
+                          borderRadius: "8px",
+                          border: "1px solid #e5e5e5",
+                          fontSize: "12px",
+                        }}
+                      />
+                      <Scatter
+                        dataKey={scatterYKey}
+                        fill="#171717"
+                        opacity={0.65}
+                        name="Observed data"
+                        isAnimationActive={true}
+                        animationDuration={650}
+                        animationEasing="ease-out"
+                      />
+                      <Line
+                        dataKey="trend"
+                        stroke="#171717"
+                        strokeWidth={2.5}
+                        dot={false}
+                        name="Fitted line"
+                        isAnimationActive={true}
+                        animationDuration={1000}
+                        animationBegin={400}
+                        animationEasing="ease-in-out"
+                      />
+                    </ComposedChart>
+                  );
+                })()
               ) : (
                 <BarChart data={result.chartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />

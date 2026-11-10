@@ -34,6 +34,7 @@ import {
   generateBusinessQuestionLibrary,
   getEnhancedBusinessQuestionLibrary,
 } from "../lib/businessQuestionEngine";
+import { WhatElseModal } from "./WhatElseModal";
 import { motion, AnimatePresence } from "motion/react";
 import { usePrefersReducedMotion } from "../lib/usePrefersReducedMotion";
 
@@ -66,6 +67,7 @@ export const QuestionScreen: React.FC<QuestionScreenProps> = ({
   const [customQuestionInput, setCustomQuestionInput] = useState("");
   const [isInterpreting, setIsInterpreting] = useState(false);
   const [interpretation, setInterpretation] = useState<StructuredQuestionInterpretation | null>(null);
+  const [isWhatElseOpen, setIsWhatElseOpen] = useState(false);
 
   // Missing Data Notice Modal State
   const [missingDataQuestion, setMissingDataQuestion] = useState<BusinessQuestion | null>(null);
@@ -228,14 +230,23 @@ export const QuestionScreen: React.FC<QuestionScreenProps> = ({
             </span>
           </div>
 
-          {onOpenOneDayChallenge && (
+          <div className="flex flex-wrap items-center gap-2">
             <button
-              onClick={onOpenOneDayChallenge}
-              className="text-xs font-semibold text-blue-700 hover:text-blue-900 flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg border border-blue-200 transition-colors cursor-pointer"
+              onClick={() => setIsWhatElseOpen(true)}
+              className="text-xs font-semibold text-neutral-800 hover:text-neutral-900 flex items-center gap-1.5 bg-neutral-100 hover:bg-neutral-200 px-3 py-1.5 rounded-lg border border-neutral-300 transition-colors cursor-pointer"
             >
-              <span>View 3-Slide Challenge Benchmark &rarr;</span>
+              <Sparkles className="w-3.5 h-3.5 text-neutral-600" />
+              <span>What else can AFTERDATA investigate?</span>
             </button>
-          )}
+            {onOpenOneDayChallenge && (
+              <button
+                onClick={onOpenOneDayChallenge}
+                className="text-xs font-semibold text-blue-700 hover:text-blue-900 flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg border border-blue-200 transition-colors cursor-pointer"
+              >
+                <span>View 3-Slide Challenge Benchmark &rarr;</span>
+              </button>
+            )}
+          </div>
         </div>
 
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-neutral-900 leading-tight">
@@ -777,6 +788,14 @@ export const QuestionScreen: React.FC<QuestionScreenProps> = ({
           </AnimatePresence>
         </div>
       </div>
+
+      {/* Persistent "What else can AFTERDATA investigate?" Modal */}
+      <WhatElseModal
+        isOpen={isWhatElseOpen}
+        onClose={() => setIsWhatElseOpen(false)}
+        dataset={dataset}
+        onSelectInvestigation={onSelectQuestion}
+      />
     </div>
   );
 };

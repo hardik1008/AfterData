@@ -108,106 +108,107 @@ function generateB2BSalesRecords(): Record<string, any>[] {
 }
 
 function generateAxisMaxLifeRecords(): Record<string, any>[] {
-  const records = [];
+  const records: Record<string, any>[] = [];
   const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-  const campaigns = ["Brand Search", "Performance Digital", "Social Direct", "Remarketing"];
+  const campaigns = ["Brand Search", "Performance Digital", "Social Direct", "Remarketing", "Organic Lead"];
 
-  // 84 consecutive calendar days: Jan 1, 2024 to Mar 24, 2024 (12 full weeks)
-  // Day 1 to 42: Pre-launch
-  // Day 43 to 84: Post-launch
-  for (let i = 1; i <= 84; i++) {
-    const isPostLaunch = i >= 43;
-    const dayOfWeek = daysOfWeek[(i - 1) % 7];
+  // 120 consecutive calendar days: Jan 1, 2025 to Apr 30, 2025 (Prompt Section 13 Benchmark)
+  // App launch date: 2 March 2025 (Day 61)
+  // Source workbook contains 5,000 transaction/session records with multiple records per date
+  const totalDays = 120;
+  const launchDayIndex = 61; // 2025-03-02
+  let globalRecordId = 10001;
+
+  for (let day = 1; day <= totalDays; day++) {
+    // Jan 1 = day 1. 2025 non-leap year: Jan 31, Feb 28, Mar 31, Apr 30
+    let month = 1;
+    let dayOfMonth = day;
+    if (dayOfMonth > 31) {
+      month = 2;
+      dayOfMonth -= 31;
+      if (dayOfMonth > 28) {
+        month = 3;
+        dayOfMonth -= 28;
+        if (dayOfMonth > 31) {
+          month = 4;
+          dayOfMonth -= 31;
+        }
+      }
+    }
+
+    const dateStr = `2025-${String(month).padStart(2, "0")}-${String(dayOfMonth).padStart(2, "0")}`;
+    const dayOfWeek = daysOfWeek[(day - 1) % 7];
     const isWeekend = dayOfWeek === "Saturday" || dayOfWeek === "Sunday";
+    const isPostLaunch = day >= launchDayIndex;
 
-    // Date string YYYY-MM-DD
-    const d = new Date(2024, 0, i);
-    const dateStr = d.toISOString().split("T")[0];
+    // Final day (Apr 30, day 120) has partial volume (14 records) to test incomplete period audit
+    const dailyCount = day === totalDays ? 14 : (day % 3 === 0 ? 43 : (day % 2 === 0 ? 41 : 42));
 
-    // Holiday flag with subtle formatting inconsistency (Prompt Part 6: day 15 has "True", day 40 has "1")
-    let isHoliday: any = (i === 1 || i === 26 || i === 68) ? 1 : 0;
-    if (i === 15) isHoliday = "True";
-    if (i === 40) isHoliday = "1";
+    // Holiday formatting inconsistency check across records on the same date (Jan 26, Mar 14)
+    const isHolidayDate = day === 26 || day === 73;
 
-    const promoActive = (i >= 20 && i <= 25) || (i >= 60 && i <= 66) ? 1 : 0;
-    const campaign = campaigns[i % campaigns.length];
+    const promoActive = (day >= 20 && day <= 25) || (day >= 85 && day <= 92) ? 1 : 0;
+    const baseDailyWebSpend = isWeekend ? 18000 : 24000;
+    const marketing_spend_website = Math.round(baseDailyWebSpend + Math.sin(day * 0.4) * 3000 + (promoActive ? 5000 : 0));
+    const marketing_spend_app = isPostLaunch ? Math.round(14000 + Math.cos(day * 0.5) * 2500) : 0;
 
-    // Website activity
-    const webVisitsBase = isWeekend ? 14000 : 18500;
-    const website_visits = Math.round(webVisitsBase + Math.sin(i * 0.4) * 2200 + (promoActive ? 2500 : 0));
-    const webConvRate = isWeekend ? 0.021 : 0.019;
-    const website_conversions = Math.round(website_visits * webConvRate);
-    const webAvgPolicy = 680 + Math.round(Math.cos(i * 0.3) * 45);
-    const website_revenue = Math.round(website_conversions * webAvgPolicy);
-    const avg_policy_value_website = Number((website_revenue / website_conversions).toFixed(1));
+    for (let r = 0; r < dailyCount; r++) {
+      if (records.length >= 5000) break;
 
-    // App activity (0 volume during pre-launch, active post-launch)
-    let app_visits = 0;
-    let app_conversions = 0;
-    let app_revenue = 0;
-    let avg_policy_value_app: number | null = null; // Strictly null pre-launch (Prompt Part 6: ~50% missing, never fill with 0)
-    let app_downloads = 0;
-    let active_app_users = 0;
-    let app_session_duration_avg: number | null = null;
-    let app_crashes = 0;
-    let marketing_spend_app = 0;
+      // Inconsistent holiday indicator formatting on identical date (Prompt Section 13)
+      let isHolidayVal: any = 0;
+      if (isHolidayDate) {
+        if (r % 3 === 0) isHolidayVal = "True";
+        else if (r % 2 === 0) isHolidayVal = 1;
+        else isHolidayVal = 0;
+      }
 
-    if (isPostLaunch) {
-      const daysSinceLaunch = i - 42;
-      const rampFactor = Math.min(1.0, 0.4 + daysSinceLaunch * 0.02);
-      app_downloads = Math.round((350 + Math.sin(i * 0.8) * 90) * rampFactor);
-      active_app_users = Math.round(1800 + daysSinceLaunch * 95 + Math.cos(i * 0.5) * 250);
-      app_visits = Math.round(active_app_users * (isWeekend ? 1.4 : 1.15));
-      const appConvRate = 0.024 + (promoActive ? 0.005 : 0);
-      app_conversions = Math.round(app_visits * appConvRate);
-      const appAvgPolicy = 740 + Math.round(Math.sin(i * 0.5) * 35);
-      app_revenue = Math.round(app_conversions * appAvgPolicy);
-      avg_policy_value_app = Number((app_revenue / app_conversions).toFixed(1));
-      app_session_duration_avg = Number((5.4 + Math.sin(i * 0.6) * 0.8).toFixed(2));
-      app_crashes = Math.max(0, Math.round(4 + Math.cos(i * 0.9) * 3));
-      marketing_spend_app = Math.round(14000 + Math.sin(i * 0.5) * 3000);
+      // Channel allocation
+      const channel = !isPostLaunch ? "website" : (r % 2 === 0 ? "app" : "website");
+      const isApp = channel === "app";
+
+      const sessionDuration = Number((isApp ? (5.2 + Math.sin(r) * 1.5) : (3.4 + Math.cos(r) * 0.9)).toFixed(1));
+      const converted = (r * 17 + day * 7) % 100 < (isApp ? (isWeekend ? 24 : 21) : (isWeekend ? 19 : 17)) ? 1 : 0;
+      const policyValue = converted ? Math.round((isApp ? 760 : 690) + Math.sin(r + day) * 80) : 0;
+
+      // Daily prorated traffic metrics
+      const webVisits = Math.round((isWeekend ? 14000 : 18500) / dailyCount);
+      const appVisits = isPostLaunch ? Math.round((isWeekend ? 16000 : 12500) / dailyCount) : 0;
+
+      records.push({
+        transaction_id: `TXN-${globalRecordId++}`,
+        date: dateStr,
+        day_of_week: dayOfWeek,
+        is_holiday: isHolidayVal,
+        promo_active: promoActive,
+        channel,
+        post_launch: isPostLaunch ? 1 : 0,
+        session_duration_minutes: sessionDuration,
+        conversions: converted,
+        policy_amount_inr: policyValue,
+        website_visits: webVisits,
+        app_visits: appVisits,
+        total_visits: webVisits + appVisits,
+        website_conversions: !isApp && converted ? 1 : 0,
+        app_conversions: isApp && converted ? 1 : 0,
+        total_conversions: converted,
+        website_revenue: !isApp ? policyValue : 0,
+        app_revenue: isApp ? policyValue : 0,
+        total_revenue: policyValue,
+        marketing_spend_website: Math.round(marketing_spend_website / dailyCount),
+        marketing_spend_app: Math.round(marketing_spend_app / dailyCount),
+        campaign_type: campaigns[(r + day) % campaigns.length],
+      });
     }
-
-    const total_visits = website_visits + app_visits;
-    const total_conversions = website_conversions + app_conversions;
-
-    // Total revenue reconciliation: Prompt Part 6: Validate whether total_revenue actually equals website + app revenue
-    // On 6 specific days, total_revenue includes offline agent / partner policies ($850 to $2,100 discrepancy)
-    let offlineDiscrepancy = 0;
-    if (i === 18 || i === 34 || i === 47 || i === 59 || i === 71 || i === 82) {
-      offlineDiscrepancy = 850 + (i * 25);
-    }
-    const total_revenue = website_revenue + app_revenue + offlineDiscrepancy;
-
-    const marketing_spend_website = Math.round(22000 + (promoActive ? 6000 : 0) + Math.cos(i * 0.4) * 2500);
-
-    records.push({
-      date: dateStr,
-      day_of_week: dayOfWeek,
-      is_holiday: isHoliday,
-      promo_active: promoActive,
-      website_visits,
-      app_visits,
-      total_visits,
-      website_conversions,
-      app_conversions,
-      total_conversions,
-      website_revenue,
-      app_revenue,
-      total_revenue,
-      avg_policy_value_website,
-      avg_policy_value_app,
-      app_downloads,
-      active_app_users,
-      app_session_duration_avg,
-      app_crashes,
-      marketing_spend_website,
-      marketing_spend_app,
-      campaign_type: campaign,
-    });
   }
 
-  return records;
+  // Pad to exact 5,000 records if needed
+  while (records.length < 5000) {
+    const copy = { ...records[records.length - 1], transaction_id: `TXN-${globalRecordId++}` };
+    records.push(copy);
+  }
+
+  return records.slice(0, 5000);
 }
 
 export function getSampleDataset(type: "axis" | "saas" | "ecommerce" | "b2b"): DatasetProfile {

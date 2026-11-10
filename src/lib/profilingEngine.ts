@@ -222,10 +222,16 @@ export function profileDataset(
       const isLowIntegerRange =
         uniqueCount <= 12 && validNums.every((n) => Number.isInteger(n) && n >= 0 && n <= 100);
 
+      // Distinguish true numeric metrics (e.g. nps, support_tickets, items_count, score, count)
+      const isNumericMetricName =
+        /(score|nps|ticket|count|item|rating|spend|revenue|value|hour|minute|day|age|loss|error|rate|pct|percent)/i.test(
+          lowerKey
+        );
+
       if (isBooleanVals) {
         inferredType = "boolean";
         categoricalColumns.push(key);
-      } else if (isCategoricalName || (isLowIntegerRange && rowCount > 20)) {
+      } else if (isCategoricalName || (isLowIntegerRange && !isNumericMetricName && rowCount > 20)) {
         inferredType = "categorical";
         categoricalColumns.push(key);
       } else {

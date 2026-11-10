@@ -21,6 +21,7 @@ import {
   DatasetProfile,
   DiscoveredInvestigation,
 } from "../types/dataset";
+import { WhatElseModal } from "./WhatElseModal";
 
 interface CapabilityDiscoveryScreenProps {
   discoveryResult: CapabilityDiscoveryResult;
@@ -39,6 +40,7 @@ export const CapabilityDiscoveryScreen: React.FC<CapabilityDiscoveryScreenProps>
 }) => {
   const { relevance, investigations, originalQuestion } = discoveryResult;
   const reducedMotion = usePrefersReducedMotion();
+  const [isWhatElseOpen, setIsWhatElseOpen] = useState(false);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -188,10 +190,17 @@ export const CapabilityDiscoveryScreen: React.FC<CapabilityDiscoveryScreenProps>
               AFTERDATA never forces an ungrounded analysis
             </span>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => setIsWhatElseOpen(true)}
+                className="px-4 py-2 text-xs font-semibold text-neutral-800 bg-neutral-100 hover:bg-neutral-200 border border-neutral-300 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-neutral-600" />
+                <span>What else can AFTERDATA investigate?</span>
+              </button>
               <button
                 onClick={onBackToEditQuestion}
-                className="px-5 py-2.5 text-xs font-semibold text-white bg-neutral-900 hover:bg-neutral-800 rounded-lg transition-colors flex items-center gap-2"
+                className="px-5 py-2 text-xs font-semibold text-white bg-neutral-900 hover:bg-neutral-800 rounded-lg transition-colors flex items-center gap-2 cursor-pointer"
               >
                 <span>Edit Your Question</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -199,6 +208,15 @@ export const CapabilityDiscoveryScreen: React.FC<CapabilityDiscoveryScreenProps>
             </div>
           </div>
         </div>
+
+        <WhatElseModal
+          isOpen={isWhatElseOpen}
+          onClose={() => setIsWhatElseOpen(false)}
+          dataset={dataset}
+          onSelectInvestigation={(q, test, target, group) => {
+            if (onSelectClarificationQuestion) onSelectClarificationQuestion(q);
+          }}
+        />
       </div>
     );
   }
@@ -210,16 +228,25 @@ export const CapabilityDiscoveryScreen: React.FC<CapabilityDiscoveryScreenProps>
       <div className="flex items-center justify-between">
         <button
           onClick={onBackToEditQuestion}
-          className="text-xs font-medium text-neutral-500 hover:text-neutral-900 flex items-center gap-1.5 transition-colors"
+          className="text-xs font-medium text-neutral-500 hover:text-neutral-900 flex items-center gap-1.5 transition-colors cursor-pointer"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Edit question</span>
         </button>
 
-        <div className="flex items-center gap-2 text-xs font-mono text-neutral-400">
-          <span>{dataset.filename}</span>
-          <span aria-hidden="true">·</span>
-          <span>N = {dataset.rowCount.toLocaleString()}</span>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsWhatElseOpen(true)}
+            className="text-xs font-semibold text-neutral-700 hover:text-neutral-900 flex items-center gap-1.5 bg-neutral-100 hover:bg-neutral-200 px-3 py-1.5 rounded-lg border border-neutral-300 transition-colors cursor-pointer"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-neutral-600" />
+            <span>What else can AFTERDATA investigate?</span>
+          </button>
+          <div className="flex items-center gap-2 text-xs font-mono text-neutral-400">
+            <span>{dataset.filename}</span>
+            <span aria-hidden="true">·</span>
+            <span>N = {dataset.rowCount.toLocaleString()}</span>
+          </div>
         </div>
       </div>
 
@@ -459,6 +486,15 @@ export const CapabilityDiscoveryScreen: React.FC<CapabilityDiscoveryScreenProps>
           <ArrowRight className="w-4 h-4" />
         </button>
       </div>
+
+      <WhatElseModal
+        isOpen={isWhatElseOpen}
+        onClose={() => setIsWhatElseOpen(false)}
+        dataset={dataset}
+        onSelectInvestigation={(q, test, target, group) => {
+          if (onSelectClarificationQuestion) onSelectClarificationQuestion(q);
+        }}
+      />
     </div>
   );
 };

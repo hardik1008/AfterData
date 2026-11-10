@@ -9,6 +9,8 @@ import { deterministicDecisionEngine } from "./src/lib/decisionEngine";
 import { METHOD_REGISTRY } from "./src/lib/methodRegistry";
 import { evaluateQuestionRelevance, extractBusinessContext } from "./src/lib/questionRelevanceGate";
 import { runAdversarialBenchmark } from "./src/lib/adversarialBenchmark";
+import { generateBusinessRecommendations } from "./src/lib/recommendationEngine";
+import { runConstrainedBusinessOptimisation, evaluateOutcomeForAllocation } from "./src/lib/optimisationEngine";
 
 dotenv.config();
 
@@ -931,9 +933,23 @@ app.post("/api/modules/compute", (req, res) => {
     return res.status(400).json({ error: "module parameter is required" });
   }
 
-  const py = spawn("python3", ["backend/run_module.py", moduleName]);
+  const pythonBin = process.platform === "win32" ? "python" : "python3";
+  let hasHandledResponse = false;
+
+  const py = spawn(pythonBin, ["backend/run_module.py", moduleName]);
   let stdoutData = "";
   let stderrData = "";
+
+  py.on("error", (err: any) => {
+    if (!hasHandledResponse) {
+      hasHandledResponse = true;
+      console.warn("Python execution unavailable:", err.message);
+      return res.status(500).json({
+        error: "Failed to spawn Python process",
+        details: err.message,
+      });
+    }
+  });
 
   py.stdout.on("data", (chunk) => {
     stdoutData += chunk.toString();
@@ -943,6 +959,8 @@ app.post("/api/modules/compute", (req, res) => {
   });
 
   py.on("close", (code) => {
+    if (hasHandledResponse) return;
+    hasHandledResponse = true;
     if (code !== 0) {
       return res.status(500).json({
         error: "Execution failed in mathematical module",
@@ -958,9 +976,43 @@ app.post("/api/modules/compute", (req, res) => {
   });
 
   if (payload) {
-    py.stdin.write(JSON.stringify(payload));
+    try {
+      py.stdin.write(JSON.stringify(payload));
+    } catch (e) {
+      // Stream may be closed if process threw spawn error
+    }
   }
-  py.stdin.end();
+  try {
+    py.stdin.end();
+  } catch (e) {}
+});
+
+// Business Recommendations Generation Endpoint (Experience F: DECIDE)
+app.post("/api/recommendations/generate", (req, res) => {
+  try {
+    const { result, dataset, weights } = req.body;
+    if (!result || !dataset) {
+      return res.status(400).json({ error: "result and dataset are required" });
+    }
+    const recommendations = generateBusinessRecommendations(result, dataset, weights);
+    res.json({ success: true, recommendations });
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to generate recommendations", details: err.message });
+  }
+});
+
+// Constrained Business Optimisation Endpoint (Experience G: OPTIMISE)
+app.post("/api/optimise/allocate", (req, res) => {
+  try {
+    const { dataset, targetOutcome, totalBudget } = req.body;
+    if (!dataset) {
+      return res.status(400).json({ error: "dataset is required" });
+    }
+    const optimisation = runConstrainedBusinessOptimisation(dataset, targetOutcome, totalBudget);
+    res.json({ success: true, optimisation });
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to run constrained optimisation", details: err.message });
+  }
 });
 
 // Persistent Provenance Ledger Storage & Endpoints

@@ -1,7 +1,7 @@
 import { DatasetProfile, StatisticalResult } from "../types/dataset";
 import { StatisticalDecisionPlan } from "./decisionEngine";
 
-export type ExperienceType = "discover" | "diagnose" | "experiment" | "learn" | "forecast";
+export type ExperienceType = "discover" | "diagnose" | "experiment" | "learn" | "forecast" | "decide" | "optimise";
 
 export interface ExperienceEligibility {
   type: ExperienceType;
@@ -10,7 +10,7 @@ export interface ExperienceEligibility {
   isEligible: boolean;
   isPrimary: boolean;
   reason: string;
-  iconName: "Compass" | "Stethoscope" | "Sliders" | "BookOpen" | "TrendingUp";
+  iconName: "Compass" | "Stethoscope" | "Sliders" | "BookOpen" | "TrendingUp" | "Lightbulb" | "Target";
 }
 
 export interface DynamicExperiencesPlan {
@@ -209,12 +209,80 @@ export function evaluateDynamicExperiences(
     iconName: "TrendingUp",
   };
 
+  // 8. Evaluate DECIDE ("What should my business do next?")
+  const asksDecide =
+    qLower.includes("what should") ||
+    qLower.includes("recommend") ||
+    qLower.includes("what next") ||
+    qLower.includes("action") ||
+    qLower.includes("strategy") ||
+    qLower.includes("decision") ||
+    qLower.includes("how can we improve");
+
+  const isDecideEligible =
+    asksDecide ||
+    result.isValidCalculation !== false; // Any verified statistical result generates structured recommendations
+  const isDecidePrimary = asksDecide && isDecideEligible;
+
+  const decideEval: ExperienceEligibility = {
+    type: "decide",
+    title: "Decide",
+    tagline: "What should my business do next?",
+    isEligible: isDecideEligible,
+    isPrimary: isDecidePrimary,
+    reason: isDecideEligible
+      ? "Verified statistical findings provide an empirical basis for structured business recommendations and test design."
+      : "No verified findings available to ground business recommendations.",
+    iconName: "Lightbulb",
+  };
+
+  // 9. Evaluate OPTIMISE ("What is the best feasible combination of business decisions?")
+  const asksOptimise =
+    qLower.includes("optimis") ||
+    qLower.includes("optimiz") ||
+    qLower.includes("allocate") ||
+    qLower.includes("allocation") ||
+    qLower.includes("best combination") ||
+    qLower.includes("budget") ||
+    qLower.includes("maximize") ||
+    qLower.includes("maximise") ||
+    qLower.includes("minimize") ||
+    qLower.includes("minimise") ||
+    qLower.includes("trade-off") ||
+    qLower.includes("tradeoff");
+
+  const controllableCols = continuousCols.filter((c) =>
+    /spend|budget|cost|price|discount|marketing|rate|channel|visits|users/i.test(c.name)
+  );
+  const canSupportOptimise =
+    (controllableCols.length >= 1 || continuousCols.length >= 2) &&
+    rowCount >= 15;
+
+  const isOptimiseEligible = (asksOptimise && canSupportOptimise) || (canSupportOptimise && (isCorrelation || isExperimentEligible));
+  const isOptimisePrimary = asksOptimise && isOptimiseEligible;
+
+  const optimiseEval: ExperienceEligibility = {
+    type: "optimise",
+    title: "Optimise",
+    tagline: "What is the best feasible combination of business decisions?",
+    isEligible: isOptimiseEligible,
+    isPrimary: isOptimisePrimary,
+    reason: isOptimiseEligible
+      ? `Controllable decision variables (${controllableCols.map((c) => c.name).slice(0, 3).join(", ") || "channel metrics"}) mapped to target outcome for constrained optimization.`
+      : asksOptimise && !canSupportOptimise
+      ? "Optimization unavailable: dataset lacks controllable input variables (e.g., spend, budget, price) or outcome metrics."
+      : "Question does not request mathematical optimization.",
+    iconName: "Target",
+  };
+
   const allEvaluations: Record<ExperienceType, ExperienceEligibility> = {
     discover: discoverEval,
     diagnose: diagnoseEval,
     experiment: experimentEval,
     learn: learnEval,
     forecast: forecastEval,
+    decide: decideEval,
+    optimise: optimiseEval,
   };
 
   // Filter only eligible experiences
@@ -222,7 +290,9 @@ export function evaluateDynamicExperiences(
 
   // Determine primary experience
   let primaryExperience: ExperienceType = "discover";
-  if (forecastEval.isPrimary) primaryExperience = "forecast";
+  if (optimiseEval.isPrimary) primaryExperience = "optimise";
+  else if (decideEval.isPrimary) primaryExperience = "decide";
+  else if (forecastEval.isPrimary) primaryExperience = "forecast";
   else if (experimentEval.isPrimary) primaryExperience = "experiment";
   else if (learnEval.isPrimary) primaryExperience = "learn";
   else if (diagnoseEval.isPrimary) primaryExperience = "diagnose";
@@ -237,7 +307,7 @@ export function evaluateDynamicExperiences(
   });
 
   const selectedCount = eligibleExperiences.length;
-  const selectionSummary = `Dynamically activated ${selectedCount} of 5 experiences (${eligibleExperiences.map((e) => e.title).join(", ")}) based on verified question intent and statistical eligibility.`;
+  const selectionSummary = `Dynamically activated ${selectedCount} of 7 experiences (${eligibleExperiences.map((e) => e.title).join(", ")}) based on verified question intent and statistical eligibility.`;
 
   return {
     eligibleExperiences,

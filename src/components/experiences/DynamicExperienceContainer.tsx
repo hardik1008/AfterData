@@ -11,12 +11,16 @@ import { DiagnoseExperience } from "./DiagnoseExperience";
 import { ExperimentExperience } from "./ExperimentExperience";
 import { LearnExperience } from "./LearnExperience";
 import { ForecastExperience } from "./ForecastExperience";
+import { DecideExperience } from "./DecideExperience";
+import { OptimiseExperience } from "./OptimiseExperience";
 import {
   Compass,
   Stethoscope,
   Sliders,
   BookOpen,
   TrendingUp,
+  Lightbulb,
+  Target,
   Sparkles,
   Info,
 } from "lucide-react";
@@ -56,6 +60,8 @@ export const DynamicExperienceContainer: React.FC<DynamicExperienceContainerProp
     Sliders: Sliders,
     BookOpen: BookOpen,
     TrendingUp: TrendingUp,
+    Lightbulb: Lightbulb,
+    Target: Target,
   };
 
   return (
@@ -65,7 +71,7 @@ export const DynamicExperienceContainer: React.FC<DynamicExperienceContainerProp
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="space-y-0.5">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400 block">
-              Dynamic Experiences ({plan.eligibleExperiences.length} of 5 active)
+              Dynamic Experiences ({plan.eligibleExperiences.length} of 7 active)
             </span>
             <p className="text-xs text-neutral-500">
               Only showing experiences mathematically defensible for your question &amp; dataset
@@ -161,6 +167,22 @@ export const DynamicExperienceContainer: React.FC<DynamicExperienceContainerProp
               dataset={dataset}
               result={result}
               targetVar={targetVar}
+            />
+          )}
+
+          {activeTab === "decide" && (
+            <DecideExperience
+              dataset={dataset}
+              result={result}
+              targetVar={targetVar}
+              groupVar={groupVar}
+            />
+          )}
+
+          {activeTab === "optimise" && (
+            <OptimiseExperience
+              dataset={dataset}
+              targetOutcome={targetVar}
             />
           )}
         </motion.div>
