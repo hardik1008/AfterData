@@ -1,0 +1,8 @@
+{
+  "name": "AFTERDATA",
+  "description": "A generic, self-aware, statistically rigorous business investigation platform. Upload your data, ask questions in natural language, and receive verified answers.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
